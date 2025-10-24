@@ -1,135 +1,176 @@
 import math
-# Pirmā versija - programma, kas spēj izrēķināt pāris nezināmos, lietojot formulas
+import logging
+import matplotlib.pyplot as plt
 
-
-# input
-
-def get_properties():
-    variable_prompts = {
-        "x0": "Ierakstiet sākuma x koordinātu",
-        "y0": "Ierakstiet sākuma y koordinātu",
-        "x": "Ierakstiet momentāno x koordinātu",
-        "y": "Ierakstiet momentāno y koordinātu",
-        "v0x": "Ierakstiet sākuma x ātrumu",
-        "v0y": "Ierakstiet sākuma y ātrumu",
-        "vx": "Ierakstiet momentāno x ātrumu",
-        "vy": "Ierakstiet momentāno y ātrumu",
-        "t": "Ierakstiet laiku, kopš kustības sākuma",
-        "ax": "Ierakstiet x paātrinājumu",
-        "ay": "Ierakstiet y paātrinājumu",
-        "alpha": "Ierakstiet leņķi pret horizontu (grādos)",
-        "v0": "Ierakstiet sākuma ātrumu (v0)",
-    }
-
-    variables = {}
-
-    for var, prompt in variable_prompts.items():
-        val = input(f"{prompt} (Atstāt tukšu, ja nezināms): ").strip()
+# --- Logging setup ---
+logging.basicConfig(
+    filename="logs.txt",
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    filemode="w"
+)
+logging.info("[INFO] Programma startēta.")
+# --- Input sākotnējo parametru iegūšana ---
+def get_initial_conditions():
+    def ask_float(prompt, default=None):
+        val = input(prompt).strip()
         if val == "":
-            variables[var] = {"value": None, "known": False}
-        else:
-            try:
-                num = float(val)
-                variables[var] = {"value": num, "known": True}
-            except ValueError:
-                print(f"[INFO]'{val}' nav skaitlis. Tiek pieņemts par nezināmu.")
-                variables[var] = {"value": None, "known": False}
-
-    return variables
-
-# check
-
-def try_solve(formula_name, required_vars, solve_fn, variables):
-    known_vars = [v for v in required_vars if variables[v]["known"]]
-    unknown_vars = [v for v in required_vars if not variables[v]["known"]]
-
-    if len(unknown_vars) == 0:
-        # Tāpat pārbaudīšu.
+            return default
         try:
-            result = solve_fn(variables)
-            print(f"Pārbaude: {formula_name} → {result}")
-        except Exception as e:
-            print(f"[ERROR] Pārbaude neizdevās! {formula_name}: {e}")
-    elif len(unknown_vars) == 1:
-        # One unknown — solve it
-        target = unknown_vars[0]
+            return float(val)
+        except ValueError:
+            print("[WARN] Nederīga vērtība, izmantošu noklusējumu.")
+            return default
+
+    x0 = ask_float("Ierakstiet sākuma x koordinātu [m] (noklusējums 0): ", 0)
+    y0 = ask_float("Ierakstiet sākuma y koordinātu [m] (noklusējums 0): ", 0)
+    v0 = ask_float("Ierakstiet sākuma ātrumu [m/s]: ", None)
+    alpha = ask_float("Ierakstiet leņķi pret horizontu (grādos): ", None)
+    ax = ask_float("Ierakstiet x paātrinājumu [m/s²] (noklusējums 0): ", 0)
+    ay = ask_float("Ierakstiet y paātrinājumu [m/s²] (noklusējums -9.81): ", -9.81)
+
+    if v0 is None or alpha is None:
+        print("[ERROR] Nepieciešams ievadīt gan v0, gan alpha!")
+        logging.error("[ERROR] Missing v0 or alpha — cannot simulate.")
+        return None
+
+    return {"x0": x0, "y0": y0, "v0": v0, "alpha": alpha, "ax": ax, "ay": ay}
+
+
+# --- Simulācija ---
+def simulate_projectile(variables, dt=0.01):
+    """
+    Veic kustības simulāciju ar laika soli dt.
+    Saglabā laiku, koordinātas, ātrumu un paātrinājumu katrā solī.
+    Kad y < 0, interpolē precīzu trieciena brīdi (y = 0).
+    """
+    logging.info("Sāku simulāciju...")
+
+    x0 = variables["x0"]["value"]
+    y0 = variables["y0"]["value"]
+    v0 = variables["v0"]["value"]
+    alpha = math.radians(variables["alpha"]["value"])
+    ax = variables["ax"]["value"]
+    ay = variables["ay"]["value"]
+
+    v0x = v0 * math.cos(alpha)
+    v0y = v0 * math.sin(alpha)
+
+    t = 0
+    data = []
+
+    while True:
+        # Position update
+        x = x0 + v0x * t + 0.5 * ax * t**2
+        y = y0 + v0y * t + 0.5 * ay * t**2
+
+        # Velocity update
+        vx = v0x + ax * t
+        vy = v0y + ay * t
+
+        data.append((t, x, y, vx, vy))
+
+        # Stop condition: projectile hits the ground
+        if y < 0:
+            # Linear interpolation for a clean impact at y = 0
+            if len(data) >= 2:
+                t1, x1, y1, _, _ = data[-2]
+                t2, x2, y2, _, _ = data[-1]
+
+                # Compute the exact impact time when y == 0
+                if y2 != y1:
+                    t_impact = t1 - y1 * (t2 - t1) / (y2 - y1)
+                    x_impact = x0 + v0x * t_impact + 0.5 * ax * t_impact**2
+                    vx_impact = v0x + ax * t_impact
+                    vy_impact = v0y + ay * t_impact
+
+                    # Replace the last entry with interpolated data
+                    data[-1] = (t_impact, x_impact, 0.0, vx_impact, vy_impact)
+                    logging.info(f"[INFO] Interpolēts trieciena punkts pie t={t_impact:.3f}s, x={x_impact:.3f}m")
+            break
+
+        t += dt
+
+    logging.info(f"Simulācija pabeigta. Kopā soļu: {len(data)}")
+    return data
+
+# --- Interaktīvā analīze ---
+def interactive_probe(sim_data):
+    if not sim_data:
+        print("[ERROR] Nav simulācijas datu.")
+        return
+
+    t_max = sim_data[-1][0]
+    print(f"Ievadiet laiku (0 līdz {round(t_max, 2)} s), lai redzētu stāvokli.")
+    print("Atstājiet tukšu, lai izietu.\n")
+
+    while True:
+        val = input("t = ").strip()
+        if val == "":
+            print("[INFO] Iziet no simulācijas apskates.")
+            break
         try:
-            result = solve_fn(variables, solve_for=target)
-            if result is not None:
-                variables[target]["value"] = result
-                variables[target]["known"] = True
-                print(f"[INFO] {target} = {result}")
-        except Exception as e:
-            print(f"[ERROR] Solving {formula_name} for {target}: {e}")
-    else:
-        print(f"[WARN] {formula_name} — pārāk daudz nezināmo: {unknown_vars}")
-# formulas
-# sāku ar v0 formulām, jo tajās ir mazāk mainīgo
+            t_query = float(val)
+            if t_query < 0 or t_query > t_max:
+                print(f"[WARN] Laiks ārpus diapazona (0 - {round(t_max,2)} s).")
+                continue
 
-def formula_v0x(v, solve_for=None):
-    v0 = v["v0"]["value"]
-    alpha = math.radians(v["alpha"]["value"])
-    if solve_for is None or solve_for == "v0x":
-        return v0 * math.cos(alpha)
-    elif solve_for == "v0":
-        return v["v0x"]["value"] / math.cos(alpha)
-    elif solve_for == "alpha":
-        return math.degrees(math.acos(v["v0x"]["value"] / v0))
-    return None
+            times = [row[0] for row in sim_data]
+            idx = min(range(len(times)), key=lambda i: abs(times[i] - t_query))
+            t, x, y, vx, vy = sim_data[idx]
+            v = math.hypot(vx, vy)
 
-def formula_v0y(v, solve_for=None):
-    v0 = v["v0"]["value"]
-    alpha = math.radians(v["alpha"]["value"])
-    if solve_for is None or solve_for == "v0y":
-        return v0 * math.sin(alpha)
-    elif solve_for == "v0":
-        return v["v0y"]["value"] / math.sin(alpha)
-    elif solve_for == "alpha":
-        return math.degrees(math.asin(v["v0y"]["value"] / v0))
-    return None
+            print(f"\nt={round(t,2)} s:")
+            print(f"  x = {round(x,2)} m, y = {round(y,2)} m")
+            print(f"  vx = {round(vx,2)} m/s, vy = {round(vy,2)} m/s")
+            print(f"  Momentānais ātrums = {round(v,2)} m/s")
+            print("  Paātrinājums ir konstants\n")
 
-def formula_x(v, solve_for=None):
-    x0 = v["x0"]["value"]
-    v0x = v["v0x"]["value"]
-    t = v["t"]["value"]
-    ax = v["ax"]["value"]
-    if solve_for is None or solve_for == "x":
-        return x0 + v0x * t + 0.5 * ax * t**2
-    return None
+        except ValueError:
+            print("[WARN] Ievadiet skaitlisku vērtību.")
 
-def formula_y(v, solve_for=None):
-    y0 = v["y0"]["value"]
-    v0y = v["v0y"]["value"]
-    t = v["t"]["value"]
-    ay = v["ay"]["value"]
-    if solve_for is None or solve_for == "y":
-        return y0 + v0y * t + 0.5 * ay * t**2
-    return None
 
-# ja viss ir, tad mēģinam izrēķināt
+# --- Grafiskā vizualizācija ---
+def plot_trajectory(sim_data):
+    xs = [row[1] for row in sim_data]
+    ys = [row[2] for row in sim_data]
 
-def run_all_formulas(variables):
-    try_solve("v0x = v0 * cos(alpha)", ["v0x", "v0", "alpha"], formula_v0x, variables)
-    try_solve("v0y = v0 * sin(alpha)", ["v0y", "v0", "alpha"], formula_v0y, variables)
-    try_solve("x = x0 + v0x*t + 0.5*ax*t²", ["x", "x0", "v0x", "t", "ax"], formula_x, variables)
-    try_solve("y = y0 + v0y*t + 0.5*ay*t²", ["y", "y0", "v0y", "t", "ay"], formula_y, variables)
+    plt.figure(figsize=(8, 5))
+    plt.plot(xs, ys, label="Trajektorija", color="royalblue")
+    plt.scatter(xs[0], ys[0], color="green", label="Sākums")
+    plt.scatter(xs[-1], ys[-1], color="red", label="Trieciena punkts")
 
-# Galvenā funkcija
+    # Find peak (max height)
+    peak_idx = ys.index(max(ys))
+    plt.scatter(xs[peak_idx], ys[peak_idx], color="orange", label="Maksimālais augstums")
 
+    plt.title("Masas punkta kustības trajektorija")
+    plt.xlabel("Horizontālā distance (m)")
+    plt.ylabel("Augstums (m)")
+    plt.legend()
+    plt.grid(True, linestyle="--", alpha=0.6)
+    plt.tight_layout()
+    plt.show()
+
+
+# --- Galvenā funkcija ---
 def main():
-    print("Brīvā kritienā esoša masas punkta kustības simulācija divās dimensijās")
-    variables = get_properties()
-    print("\nMēģinu atrisināt zināmās formulas...\n")
-    run_all_formulas(variables)
+    params = get_initial_conditions()
+    if params is None:
+        return
 
-    print("\nGala rezultāti:")
-    for name, data in variables.items():
-        val = data["value"]
-        status = "zināms" if data["known"] else "nezināms"
-        print(f"{name}: {val if data['known'] else '---'} ({status})")
+    sim_data = simulate_projectile(params)
+    plot_trajectory(sim_data)
+    interactive_probe(sim_data)
+    logging.info("[INFO] Programma pabeidza izpildi.")
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        msg = f"Neapstrādāta kļūda: {e}"
+        print(f"[FATAL] {msg}")
+        logging.critical(msg)
 
-# Kods izveidots, prasot palīdzību ChatGPT optimizācijas jautājumos. Struktūra un funkcijas izdomāju pats.
-
+# Koda izveidošana un optimizēšana atvieglināta, lietojot ChatGPT 5.
