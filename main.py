@@ -30,7 +30,7 @@ def get_initial_conditions():
     ay = ask_float("Ierakstiet y paātrinājumu [m/s²] (noklusējums -9.81): ", -9.81)
 
     if v0 is None or alpha is None:
-        print("[ERROR] Nepieciešams ievadīt gan v0, gan alpha!")
+        print("[ERROR] Nepieciešams ievadīt gan sākotnējo ātrumu, gan leņķi pret horizontu!")
         logging.error("[ERROR] Missing v0 or alpha — cannot simulate.")
         return None
 
