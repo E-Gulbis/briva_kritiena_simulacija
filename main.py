@@ -29,9 +29,8 @@ def get_initial_conditions():
 
     h0 = ask_float("Initial height h0 (m): ", 10)
     v0 = ask_float("Initial vertical velocity v0 (m/s) [default 0]: ", 0)
-    a = ask_float("Acceleration (m/s²) [default -9.81]: ", g)
 
-    return h0, v0, a
+    return h0, v0, g
 
 
 # --- Simulation ---
@@ -40,8 +39,8 @@ def simulate_fall(h0, v0, a, dt=0.01):
     data = []
 
     while True:
-        h = h0 + v0 * t + 0.5 * a * t**2
-        v = v0 + a * t
+        h = h0 + v0 * t + 0.5 * g * t**2
+        v = v0 + g * t
 
         data.append((t, h, v))
 
@@ -106,7 +105,7 @@ def plot_height(sim_data):
 
 # --- Main ---
 def main():
-    h0, v0, a = get_initial_conditions()
+    h0, v0,g= get_initial_conditions()
     sim_data = simulate_fall(h0, v0, a)
 
     plot_height(sim_data)
