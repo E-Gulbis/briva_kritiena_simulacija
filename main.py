@@ -17,24 +17,25 @@ g = -9.81  # gravitational acceleration
 
 # --- Input ---
 def get_initial_conditions():
-    def ask_float(prompt, default=None):
+    def ask_float(prompt):
         val = input(prompt).strip()
         if val == "":
-            return default
+            logging.warn("Blank string passed as input: " + val)
+            return ask_float("Lūdzu, ievadiet datus: ")
         try:
             return float(val)
         except ValueError:
-            print("[WARN] Invalid input, using default.")
-            return default
+            logging.warn("Invalid user input: " + val)
+            return ask_float("Ievadi neizdevās pārveidot par skaitli, lūdzu, mēģiniet vēlreiz: ")
 
-    h0 = ask_float("Initial height h0 (m): ", 10)
-    v0 = ask_float("Initial vertical velocity v0 (m/s) [default 0]: ", 0)
+    h0 = ask_float("Lūdzu, ievadiet skotnējo augstumu h0 (m): ")
+    v0 = ask_float("Lūdzu, ievadiet sākotnējo ātrumu v0 (m/s): ")
 
-    return h0, v0, g
+    return h0, v0
 
 
 # --- Simulation ---
-def simulate_fall(h0, v0, a, dt=0.01):
+def simulate_fall(h0, v0, dt=0.01):
     t = 0
     data = []
 
