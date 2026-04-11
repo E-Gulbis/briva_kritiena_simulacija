@@ -108,7 +108,7 @@ def plot_height(sim_data):
 # --- Main ---
 def main():
     h0, v0= get_initial_conditions()
-    sim_data = simulate_fall(h0, v0, g)
+    sim_data = simulate_fall(h0, v0)
 
     plot_height(sim_data)
     interactive_probe(sim_data)
