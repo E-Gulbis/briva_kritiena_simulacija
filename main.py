@@ -63,7 +63,6 @@ def interactive_probe(sim_data):
 
     t_max = sim_data[-1][0]
 
-    # print(f"\nEnter time (0 to {round(t_max, 2)} s). Press Enter to exit.\n")
     print(f"\n Lūdzu, ievadiet laika daudzumu, kas pagājis kopš kustības sākuma vai nospiediet \"Enter\", lai izietu. (No 0s līdz {round(t_max, 2)}s): ")
 
     while True:
@@ -108,8 +107,8 @@ def plot_height(sim_data):
 
 # --- Main ---
 def main():
-    h0, v0,g= get_initial_conditions()
-    sim_data = simulate_fall(h0, v0, a)
+    h0, v0= get_initial_conditions()
+    sim_data = simulate_fall(h0, v0, g)
 
     plot_height(sim_data)
     interactive_probe(sim_data)
