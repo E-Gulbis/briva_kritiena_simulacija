@@ -7,7 +7,7 @@ logging.basicConfig(
     filename="logs.txt",
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    filemode="w"
+    filemode="a"
 )
 
 logging.info("Program started.")
@@ -20,15 +20,15 @@ def get_initial_conditions():
     def ask_float(prompt):
         val = input(prompt).strip()
         if val == "":
-            logging.warn("Blank string passed as input: " + val)
+            logging.warning("Blank string passed as input: " + val)
             return ask_float("Lūdzu, ievadiet datus: ")
         try:
             return float(val)
         except ValueError:
-            logging.warn("Invalid user input: " + val)
-            return ask_float("Ievadi neizdevās pārveidot par skaitli, lūdzu, mēģiniet vēlreiz: ")
+            logging.warning("Invalid user input: " + val)
+            return ask_float("Ievadi neizdevās pārveidot par skaitli. Lūdzu, mēģiniet vēlreiz: ")
 
-    h0 = ask_float("Lūdzu, ievadiet skotnējo augstumu h0 (m): ")
+    h0 = ask_float("Lūdzu, ievadiet sākotnējo augstumu h0 (m): ")
     v0 = ask_float("Lūdzu, ievadiet sākotnējo ātrumu v0 (m/s): ")
 
     return h0, v0
@@ -57,23 +57,25 @@ def simulate_fall(h0, v0, dt=0.01):
 # --- Interactive probe ---
 def interactive_probe(sim_data):
     if not sim_data:
-        print("[ERROR] No data.")
+        logging.error("Simulation data not found!")
+        print("Simulācijas datu ielāde nav izdevusies.")
         return
 
     t_max = sim_data[-1][0]
 
-    print(f"\nEnter time (0 to {round(t_max, 2)} s). Press Enter to exit.\n")
+    # print(f"\nEnter time (0 to {round(t_max, 2)} s). Press Enter to exit.\n")
+    print(f"\n Lūdzu, ievadiet laika daudzumu, kas pagājis kopš kustības sākuma vai nospiediet \"Enter\", lai izietu. (No 0s līdz {round(t_max, 2)}s): ")
 
     while True:
         val = input("t = ").strip()
         if val == "":
-            print("Exiting probe.")
+            logging.info("Exiting probe.")
             break
 
         try:
             t_query = float(val)
             if t_query < 0 or t_query > t_max:
-                print("[WARN] Out of range.")
+                logging.warning("Out of range t requested:" + string(t))
                 continue
 
             times = [row[0] for row in sim_data]
@@ -87,7 +89,7 @@ def interactive_probe(sim_data):
             print(f"  acceleration = constant ({round(g,2)} m/s²)\n")
 
         except ValueError:
-            print("[WARN] Enter a number.")
+            print("Ievade nevar tikt pārveidota par skaitli.")
 
 
 # --- Plot ---
@@ -97,9 +99,9 @@ def plot_height(sim_data):
 
     plt.figure()
     plt.plot(ts, hs)
-    plt.xlabel("Time (s)")
-    plt.ylabel("Height (m)")
-    plt.title("Free fall motion h(t)")
+    plt.xlabel("Laiks (s)")
+    plt.ylabel("Augstums (m)")
+    plt.title("Ķermeņa augstums h(t)")
     plt.grid(True)
     plt.show()
 
@@ -119,7 +121,6 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        print("[FATAL ERROR]", e)
-        logging.critical(f"Unhandled error: {e}")
+        logging.critical(f"Critical error: {e}")
 
 # Koda izveidošana un optimizēšana atvieglināta, lietojot ChatGPT 5.
