@@ -93,7 +93,7 @@ def interactive_probe(h0, v0, sim_data):
                 print(f"  Momentānais ātrums = {round(v,2)} m/s")
             else:
                 print(f"  Momentānais ātrums = {abs(round(v,2))} m/s (lejupvērsts)")
-            print(f"  Paātrinājums = konstants ({round(g,2)} m/s²)\n")
+            print(f"  Paātrinājums = konstants ({abs(round(g,2))} m/s²) (lejupvērsts) \n")
 
         except ValueError:
             print("Ievade nevar tikt pārveidota par skaitli.")
