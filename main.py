@@ -77,15 +77,13 @@ def interactive_probe(sim_data):
                 logging.warning("Out of range t requested:" + string(t))
                 continue
 
-            times = [row[0] for row in sim_data]
-            idx = min(range(len(times)), key=lambda i: abs(times[i] - t_query))
-
-            t, h, v = sim_data[idx]
+            h = h0 + v0 * t + 0.5 * g * t**2
+            v = v0 + g * t
 
             print(f"\nt = {round(t,2)} s")
-            print(f"  height = {round(h,2)} m")
-            print(f"  velocity = {round(v,2)} m/s")
-            print(f"  acceleration = constant ({round(g,2)} m/s²)\n")
+            print(f"  Momentānais augstums = {round(h,2)} m")
+            print(f"  Momentānais ātrums = {round(v,2)} m/s")
+            print(f"  Paātrinājums = constant ({round(g,2)} m/s²)\n")
 
         except ValueError:
             print("Ievade nevar tikt pārveidota par skaitli.")
