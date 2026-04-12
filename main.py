@@ -55,7 +55,7 @@ def simulate_fall(h0, v0, dt=0.01):
 
 
 # --- Interactive probe ---
-def interactive_probe(h0, v0, sim_data):
+def interactive_probe(h0, v0):
     if not sim_data:
         logging.error("Simulation data not found!")
         print("Simulācijas datu ielāde nav izdevusies.")
@@ -72,7 +72,7 @@ def interactive_probe(h0, v0, sim_data):
             break
 
         try:
-            t_query = float(val)
+            t = float(val)
             if t_query < 0 or t_query > t_max:
                 logging.warning("Out of range t requested:" + string(t))
                 continue
@@ -108,7 +108,7 @@ def main():
     h0, v0= get_initial_conditions()
     sim_data = simulate_fall(h0, v0)
     plot_height(sim_data)
-    interactive_probe(h0, v0, sim_data)
+    interactive_probe(h0, v0)
 
     logging.info("Program finished.")
 
