@@ -82,8 +82,8 @@ def interactive_probe(h0, v0, sim_data):
             for row in sim_data:
                 diff = abs(row[0] - t)
                 if diff < min_diff:
-                closest = row
-                min_diff = diff
+                    closest = row
+                    min_diff = diff
 
             t, h, v = closest
 
@@ -112,7 +112,7 @@ def plot_height(sim_data):
 
 # --- Main ---
 def main():
-    h0, v0= get_initial_conditions()
+    h0, v0 = get_initial_conditions()
     sim_data = simulate_fall(h0, v0)
     plot_height(sim_data)
     interactive_probe(h0, v0, sim_data)
