@@ -55,7 +55,7 @@ def simulate_fall(h0, v0, dt=0.01):
 
 
 # --- Interactive probe ---
-def interactive_probe(h0, v0):
+def interactive_probe(h0, v0, sim_data):
     if not sim_data:
         logging.error("Simulation data not found!")
         print("Simulācijas datu ielāde nav izdevusies.")
@@ -108,7 +108,7 @@ def main():
     h0, v0= get_initial_conditions()
     sim_data = simulate_fall(h0, v0)
     plot_height(sim_data)
-    interactive_probe(h0, v0)
+    interactive_probe(h0, v0, sim_data)
 
     logging.info("Program finished.")
 
