@@ -1,4 +1,3 @@
-import math
 import logging
 import matplotlib.pyplot as plt
 
@@ -73,12 +72,20 @@ def interactive_probe(h0, v0, sim_data):
 
         try:
             t = float(val)
-            if t_query < 0 or t_query > t_max:
-                logging.warning("Out of range t requested:" + string(t))
+            if t < 0 or t > t_max:
+                logging.warning(f"Out of range t requested: {t}")
                 continue
 
-            h = h0 + v0 * t + 0.5 * g * t**2
-            v = v0 + g * t
+            closest = sim_data[0]
+            min_diff = abs(closest[0] - t)
+
+            for row in sim_data:
+                diff = abs(row[0] - t)
+                if diff < min_diff:
+                closest = row
+                min_diff = diff
+
+            t, h, v = closest
 
             print(f"\nt = {round(t,2)} s")
             print(f"  Momentānais augstums = {round(h,2)} m")
